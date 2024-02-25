@@ -31,7 +31,7 @@ public class DatabaseConnector
         foreach(var keyCheck in _server.Keys(pattern: patternKey)) 
         {
             string valueCheck = (string)_db.StringGet(keyCheck);
-            if (valueCheck.Contains(value) && keyCheck != key)
+            if (String.Equals(valueCheck, value) && keyCheck != key)
                 return true;
         }
         return false;
