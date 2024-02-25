@@ -24,5 +24,8 @@ public class SummaryModel : PageModel
         _logger.LogDebug(id);
 
         //TODO: проинициализировать свойства Rank и Similarity значениями из БД
+        DatabaseConnector dbConnector = new DatabaseConnector();
+        Rank = (double)dbConnector.GetValueByKey("RANK-" + id);
+        Similarity = (double)dbConnector.GetValueByKey("SIMILARITY-" + id);
     }
 }
