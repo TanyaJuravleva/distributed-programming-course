@@ -10,10 +10,12 @@ namespace Valuator.Pages;
 public class SummaryModel : PageModel
 {
     private readonly ILogger<SummaryModel> _logger;
+        private readonly IRedisConnector _dbConnector;
 
-    public SummaryModel(ILogger<SummaryModel> logger)
+    public SummaryModel(ILogger<SummaryModel> logger, IRedisConnector dbConnector)
     {
         _logger = logger;
+        _dbConnector = dbConnector;
     }
 
     public double Rank { get; set; }
@@ -24,8 +26,7 @@ public class SummaryModel : PageModel
         _logger.LogDebug(id);
 
         //TODO: проинициализировать свойства Rank и Similarity значениями из БД
-        DatabaseConnector dbConnector = new DatabaseConnector();
-        Rank = (double)dbConnector.GetValueByKey("RANK-" + id);
-        Similarity = (double)dbConnector.GetValueByKey("SIMILARITY-" + id);
+        Rank = (double)_dbConnector.GetValueByKey("RANK-" + id);
+        Similarity = (double)_dbConnector.GetValueByKey("SIMILARITY-" + id);
     }
 }
