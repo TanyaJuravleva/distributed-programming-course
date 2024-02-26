@@ -1,5 +1,3 @@
-///using Valuator.Redis;
-
 namespace Valuator;
 
 public class Program
