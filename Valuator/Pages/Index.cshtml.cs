@@ -1,5 +1,10 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using NATS.Client;
+using System;
+using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Valuator.Pages;
 
@@ -17,20 +22,6 @@ public class IndexModel : PageModel
     public void OnGet()
     {
 
-    }
-
-    private double GetRank(string text)
-    {
-        if (String.IsNullOrEmpty(text))
-            return 0;
-
-        double numberOfNonAlphabeticCharacters = 0;
-        for (int i = 0; i < text.Length; i++)
-        {
-            if (!Char.IsLetter(text[i]))
-                numberOfNonAlphabeticCharacters++;
-        }
-        return numberOfNonAlphabeticCharacters / text.Length;
     }
 
     private double GetSimilarity(string patternKey, string key)
@@ -55,6 +46,21 @@ public class IndexModel : PageModel
         return false;
     }
 
+    static async Task ProduceAsync(CancellationToken ct, string id)
+    {
+        ConnectionFactory cf = new ConnectionFactory();
+
+        using (IConnection c = cf.CreateConnection())
+        {
+            byte[] data = Encoding.UTF8.GetBytes(id);
+            c.Publish("valuator.processing.rank", data);
+            await Task.Delay(1000);
+            c.Drain();
+
+            c.Close();
+        }
+    }
+
     public IActionResult OnPost(string text)
     {
         _logger.LogDebug(text);
@@ -65,15 +71,18 @@ public class IndexModel : PageModel
         //TODO: сохранить в БД text по ключу textKey
         _dbConnector.SetValueByKey(textKey, text);
 
-        string rankKey = "RANK-" + id;
-        //TODO: посчитать rank и сохранить в БД по ключу rankKey
-        double rank = GetRank(text);
-        _dbConnector.SetValueByKey(rankKey, rank);
-
         string similarityKey = "SIMILARITY-" + id;
         //TODO: посчитать similarity и сохранить в БД по ключу similarityKey
         double similarity = GetSimilarity("TEXT-*", textKey);
         _dbConnector.SetValueByKey(similarityKey, similarity);
+
+        // string rankKey = "RANK-" + id;
+        // //TODO: посчитать rank и сохранить в БД по ключу rankKey
+        // double rank = GetRank(text);
+        // _dbConnector.SetValueByKey(rankKey, rank);
+        CancellationTokenSource cts = new CancellationTokenSource();
+        ProduceAsync(cts.Token, id);
+        cts.Cancel();
 
         return Redirect($"summary?id={id}");
     }
